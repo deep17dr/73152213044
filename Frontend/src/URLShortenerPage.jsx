@@ -95,7 +95,7 @@ const URLShortenerPage = () => {
                   onChange={(e) => handleChange(index, 'shortcode', e.target.value)}
                 />
               </Grid>
-              <Grid item xs={12} sm={4}>
+              <Grid item xs={12} sm={4} >
                 <Button
                   variant="contained"
                   fullWidth

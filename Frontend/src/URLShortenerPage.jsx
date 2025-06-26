@@ -57,14 +57,14 @@ const URLShortenerPage = () => {
       updated[index].error = '';
       setUrls(updated);
     } catch (error) {
-      handleChange(index, 'error', 'Failed to shorten URL');
+      handleChange(index, `${error}`, 'Failed to shorten URL');
     }
   };
 
   return (
     <>
       {urls.map((item, index) => (
-        <Card key={index} sx={{ mb: 3 }}>
+        <Card key={index} sx={{ mb: 3}}>
           <CardContent>
             <Typography variant="h6">URL #{index + 1}</Typography>
             <Grid container spacing={2}>

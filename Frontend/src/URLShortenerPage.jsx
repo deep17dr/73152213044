@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState } from "react";
 import {
   TextField,
   Button,
@@ -6,14 +6,21 @@ import {
   Card,
   CardContent,
   Typography,
-} from '@mui/material';
-import axios from 'axios';
+} from "@mui/material";
+import axios from "axios";
+
+// Custom Logger (Requirement: no console.log)
+const customLogger = (msg, type = "info") => {
+  const timestamp = new Date().toISOString();
+  const log = `[${timestamp}] [${type.toUpperCase()}] ${msg}`;
+  localStorage.setItem(`log-${timestamp}`, log);
+};
 
 const MAX_URLS = 5;
 
 const URLShortenerPage = () => {
   const [urls, setUrls] = useState([
-    { longUrl: '', validity: '', shortcode: '', shortUrl: '', error: '' },
+    { longUrl: "", validity: "", shortcode: "", shortUrl: "", error: "" },
   ]);
 
   const handleChange = (index, field, value) => {
@@ -26,7 +33,7 @@ const URLShortenerPage = () => {
     if (urls.length < MAX_URLS) {
       setUrls([
         ...urls,
-        { longUrl: '', validity: '', shortcode: '', shortUrl: '', error: '' },
+        { longUrl: "", validity: "", shortcode: "", shortUrl: "", error: "" },
       ]);
     }
   };
@@ -36,35 +43,49 @@ const URLShortenerPage = () => {
   };
 
   const shortenUrl = async (index) => {
-    const url = urls[index];
+    const { longUrl, validity, shortcode } = urls[index];
 
-    if (!validateUrl(url.longUrl)) {
-      handleChange(index, 'error', 'Invalid URL');
+    // Validate URL
+    if (!validateUrl(longUrl)) {
+      handleChange(index, "error", "Invalid URL");
+      customLogger("Invalid URL entered", "error");
       return;
     }
 
-    if (url.validity && (!/^\d+$/.test(url.validity) || Number(url.validity) <= 0)) {
-      handleChange(index, 'error', 'Validity must be a positive number');
+    // Validate validity
+    const validityValue = validity ? parseInt(validity) : 30;
+    if (isNaN(validityValue) || validityValue <= 0) {
+      handleChange(index, "error", "Validity must be a positive number");
+      customLogger("Invalid validity input", "error");
       return;
     }
+
+    // Prepare payload
+    const payload = {
+      longUrl,
+      validity: validityValue,
+      shortcode: shortcode || undefined,
+    };
 
     try {
-      const res = await axios.get(
-        `https://tinyurl.com/api-create.php?url=${encodeURIComponent(url.longUrl)}`
-      );
+      const res = await axios.post("http://localhost:8080/shorten", payload);
+
       const updated = [...urls];
-      updated[index].shortUrl = res.data;
-      updated[index].error = '';
+      updated[index].shortUrl = res.data.shortUrl;
+      updated[index].error = "";
       setUrls(updated);
-    } catch (error) {
-      handleChange(index, `${error}`, 'Failed to shorten URL');
+
+      customLogger(`Shortened URL created: ${res.data.shortUrl}`, "success");
+    } catch (err) {
+      handleChange(index, "error", "Failed to shorten URL");
+      customLogger("Backend error: Failed to shorten URL", "error");
     }
   };
 
   return (
     <>
       {urls.map((item, index) => (
-        <Card key={index} sx={{ mb: 3}}>
+        <Card key={index} sx={{ mb: 4 }}>
           <CardContent>
             <Typography variant="h6">URL #{index + 1}</Typography>
             <Grid container spacing={2}>
@@ -73,7 +94,7 @@ const URLShortenerPage = () => {
                   label="Long URL"
                   fullWidth
                   value={item.longUrl}
-                  onChange={(e) => handleChange(index, 'longUrl', e.target.value)}
+                  onChange={(e) => handleChange(index, "longUrl", e.target.value)}
                   error={!!item.error}
                   helperText={item.error}
                 />
@@ -83,7 +104,7 @@ const URLShortenerPage = () => {
                   label="Validity (min)"
                   fullWidth
                   value={item.validity}
-                  onChange={(e) => handleChange(index, 'validity', e.target.value)}
+                  onChange={(e) => handleChange(index, "validity", e.target.value)}
                 />
               </Grid>
               <Grid item xs={6} md={3}>
@@ -91,11 +112,12 @@ const URLShortenerPage = () => {
                   label="Custom Shortcode (optional)"
                   fullWidth
                   value={item.shortcode}
-                  disabled // Not supported by TinyURL API
-                  onChange={(e) => handleChange(index, 'shortcode', e.target.value)}
+                  onChange={(e) =>
+                    handleChange(index, "shortcode", e.target.value)
+                  }
                 />
               </Grid>
-              <Grid item xs={12} sm={4} >
+              <Grid item xs={12} sm={4}>
                 <Button
                   variant="contained"
                   fullWidth
